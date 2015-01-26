@@ -76,7 +76,7 @@ describe("A Suite is checked promise action", function() {
     ready(function(ns){
         var brook = ns.brook;
         it("create promise", function(){
-            var promise = brook.promise(function(value, next){})
+            var promise = brook.promise(function(value, next){});
             expect(promise).toBeDefined();
             expect(promise.run).toBeDefined();
             expect(promise.subscribe).toBeDefined();
