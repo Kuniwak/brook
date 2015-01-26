@@ -14,20 +14,13 @@ Namespace('brook.dom.compat')
     /**
      * Returns HTMLElement.dataset by the specified HTMLElement.
      *
-     * NOTE: This function is preceding upgraded to fix
-     * https://github.com/hirokidaichi/brook/pull/22.
-     *
-     * NOTE: You should care an undefined attribute value to keep compatible
-     * for Android default browser.
-     *
-     * In Android default broswer:
-     *     dataset[somethingUnexistentAttr] === ''.
-     *
-     * But in other browsers:
-     *     dataset[somethingUnexistentAttr] === undefined.
+     * NOTE: You should NOT use the function directly, because it makes fallback
+     * unavailble for Android browsers. the function made some incidents caused
+     * by the Android browser's baffling behavior.
      *
      * @name brook.dom.compat.dataset
      * @function
+     * @deprecated
      */
     var dataset = (function(){
         var camelize = function(string){
@@ -52,6 +45,58 @@ Namespace('brook.dom.compat')
         var isNativeDatasetAvailable = 'DOMStringMap' in window;
         return isNativeDatasetAvailable ? datasetNative : datasetCompat;
     })();
+
+
+    /**
+     * Returns a data attribute value by the specified element and the attribute
+     * name. This method keeps cross-browser compatibility for legacy browsers
+     * and Android browsers and others.
+     *
+     * @name brook.dom.compat.getDatasetValue
+     * @function
+     * @param {Element} elem The element to get dataset.
+     * @param {string} attrName The attribute name.
+     * @return {string} Data attribute value.
+     */
+    var getDatasetValue = function getDatasetValue(elem, attrName) {
+      return getDatasetValues(elem, [attrName])[attrName];
+    };
+
+
+    /**
+     * Returns a partial dataset object by the specified element and attribute
+     * names (like a hash slice in perl). This method keeps cross-browser
+     * compatibility for legacy browsers and Android browsers and others.
+     *
+     * @name brook.dom.compat.getDatasetValues
+     * @function
+     * @param {Element} elem The element to get dataset.
+     * @param {Array.<string>} attrNames The attribute names to get partial
+     *   dataset.
+     * @return {Object.<string, string>} Data attribute values object.
+     */
+    var getDatasetValues = function getDatasetValues(elem, attrNames) {
+      var result = {};
+
+      var datasetObj = dataset(elem);
+      for (var attrIdx = 0, attrLen = attrNames.length; attrIdx < attrLen; attrIdx++) {
+        // In Android default broswer, we should check the key bacause Android
+        // Android browser has the baffling behavior such as the following:
+        //
+        //   >> dataset[somethingUnexistentAttr] === ''
+        //   true
+        var attrName = attrNames[attrIdx];
+
+        var isAttrDefined = attrName in datasetObj;
+        if (!isAttrDefined) continue;
+
+        var attrVal = datasetObj[attrName];
+
+        result[attrName] = attrVal;
+      }
+
+      return result;
+    };
 
     var ClassList = function(element){
         this._element = element;
@@ -149,7 +194,9 @@ Namespace('brook.dom.compat')
     ns.provide({
         getElementsByClassName : getElementsByClassName,
         hasClassName : hasClassName,
-        dataset   : dataset,
-        classList : classList
+        dataset : dataset,
+        classList : classList,
+        getDatasetValue : getDatasetValue,
+        getDatasetValues : getDatasetValues
     });
 });
